@@ -1,0 +1,30 @@
+schema: 1
+name: aqua
+version: 2.66.1
+pav: 1
+level: 1
+summary: declarative CLI version manager
+description: |
+  aqua installs command line tools at the versions declared in a project
+  configuration file, with checksum and policy verification.
+homepage: https://aquaproj.github.io
+upstream: aquaproj/aqua
+license:
+  spdx: MIT
+  file: {archive: LICENSE}
+value: Not in Debian or Ubuntu; author has no APT repository; not in griffo.
+arch_map: {amd64: amd64, arm64: arm64}
+artifact:
+  url: https://github.com/aquaproj/aqua/releases/download/{{tag}}/aqua_linux_{{arch}}.tar.gz
+  format: tar.gz
+checksums:
+  url: https://github.com/aquaproj/aqua/releases/download/{{tag}}/aqua_{{version}}_checksums.txt
+  format: sha256sum
+install:
+  - {src: aqua, dst: /usr/bin/}
+completions:
+  bash: {generate: aqua completion bash}
+  zsh: {generate: aqua completion zsh}
+  fish: {generate: aqua completion fish}
+lintian_overrides:
+  - {tag: statically-linked-binary, reason: Upstream Go binaries are static by design; level 1 repackaging cannot relink them.}

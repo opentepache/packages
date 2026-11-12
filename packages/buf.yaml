@@ -1,0 +1,32 @@
+schema: 1
+name: buf
+version: 1.75.0
+pav: 1
+level: 1
+summary: tooling for Protocol Buffers linting, breaking checks and codegen
+description: |
+  buf lints and formats Protocol Buffers, detects breaking changes and
+  generates code. Includes the protoc-gen-buf-lint and
+  protoc-gen-buf-breaking protoc plugins.
+homepage: https://buf.build
+upstream: bufbuild/buf
+license:
+  spdx: Apache-2.0
+  file: {archive: buf/LICENSE}
+value: Not in Debian or Ubuntu; upstream only ships Homebrew, no APT repository; not in griffo.
+arch_map: {amd64: x86_64, arm64: aarch64}
+artifact:
+  url: https://github.com/bufbuild/buf/releases/download/{{tag}}/buf-Linux-{{arch}}.tar.gz
+  format: tar.gz
+checksums:
+  url: https://github.com/bufbuild/buf/releases/download/{{tag}}/sha256.txt
+  format: sha256sum
+install:
+  - {src: "buf/bin/*", dst: /usr/bin/}
+completions:
+  bash: {file: buf/etc/bash_completion.d/buf}
+  zsh: {file: buf/share/zsh/site-functions/_buf}
+  fish: {file: buf/share/fish/vendor_completions.d/buf.fish}
+man: ["buf/share/man/man1/*.1"]
+lintian_overrides:
+  - {tag: statically-linked-binary, reason: Upstream Go binaries are static by design; level 1 repackaging cannot relink them.}

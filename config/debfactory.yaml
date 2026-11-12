@@ -1,0 +1,41 @@
+schema: 1
+maintainer: Juan Pavon <pavon.gnu@gmail.com>
+
+arches: [amd64, arm64]
+
+suites:            # orden = orden del informe
+  bookworm: {image: "debian:bookworm", level2_suffix: deb12}
+  trixie:   {image: "debian:trixie",   level2_suffix: deb13}
+  sid:      {image: "debian:sid",      level2_suffix: debsid}
+  noble:    {image: "ubuntu:noble",    level2_suffix: u2404}
+  resolute: {image: "ubuntu:resolute", level2_suffix: u2604}
+
+lintian:
+  image: "debian:trixie"
+  fail_on: error
+  never_override_patterns:  # regex; constitución VII: seguridad, licencia y copyright
+    - "^copyright-"
+    - "^license-problem-"
+    - "^dep5-"
+    - "^missing-license"
+    - "^no-copyright-file$"
+    - "^embedded-library$"
+    - "^setuid-binary$"
+    - "^setgid-binary$"
+    - "^non-standard-executable-perm$"
+
+elf_dependencies:          # NEEDED -> paquete; {glibc} se reemplaza por la GLIBC_x.y máxima
+  libc.so.6:       "libc6 (>= {glibc})"
+  libm.so.6:       "libc6 (>= {glibc})"
+  libdl.so.2:      "libc6 (>= {glibc})"
+  librt.so.1:      "libc6 (>= {glibc})"
+  libpthread.so.0: "libc6 (>= {glibc})"
+  libgcc_s.so.1:   "libgcc-s1"
+  ld-linux-x86-64.so.2:  "libc6 (>= {glibc})"   # el cargador, si un binario lo declara en NEEDED
+  ld-linux-aarch64.so.1: "libc6 (>= {glibc})"   # (bob arm64 lo hace)
+
+community_repos:           # constitución V; comprobación manual en la fase 1
+  - name: griffo
+    url: https://debian.griffo.io
+
+completions_image: "debian:trixie"

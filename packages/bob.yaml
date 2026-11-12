@@ -1,0 +1,29 @@
+schema: 1
+name: bob
+version: 4.3.0
+pav: 1
+level: 1
+summary: version manager for Neovim
+description: |
+  bob installs, switches and removes Neovim versions (stable, nightly or a
+  specific release) without touching the system Neovim.
+homepage: https://github.com/MordechaiHadad/bob
+upstream: MordechaiHadad/bob
+license:
+  spdx: MIT
+  file: {repo: LICENSE}
+value: Not in Debian or Ubuntu; author has no APT repository; not in griffo.
+arch_map: {amd64: x86_64, arm64: arm}
+artifact:
+  url: https://github.com/MordechaiHadad/bob/releases/download/{{tag}}/bob-linux-{{arch}}.zip
+  format: zip
+install:
+  - {src: "bob-linux-{{arch}}/bob", dst: /usr/bin/, mode: "0755"}  # el zip no trae el bit ejecutable
+depends: [ca-certificates]  # bob crea un cliente TLS al arrancar (research §3 riesgo 3)
+completions:
+  bash: {generate: bob complete bash}
+  zsh: {generate: bob complete zsh}
+  fish: {generate: bob complete fish}
+exclude:
+  suites:
+    bookworm: Upstream builds on Ubuntu 24.04 and requires glibc >= 2.39; bookworm has 2.36.
