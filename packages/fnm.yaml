@@ -1,7 +1,7 @@
 schema: 1
 name: fnm
 version: 1.39.0
-pav: 1
+revision: 1
 level: 1
 summary: fast and simple Node.js version manager
 description: |
