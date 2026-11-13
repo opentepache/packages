@@ -1,5 +1,33 @@
 # Generado por debfactory publish/retire. No editar a mano.
 schema: 1
-serial: 0
-packages: {}
+serial: 1
+packages:
+  aqua:
+    - version: 2.66.1-0~tepache1
+      published: 2026-11-13T15:47:39Z
+      suites: [bookworm, trixie, sid, noble, resolute]
+      debs:
+        amd64: a39c9eedf070c3f20bfbb37aad22a4db5fb29042e1c75ec57786dfd25af30653
+        arm64: 41e13bf7f7d1a72cdd4cd6378336ca23205c6377f62a617a22a3bdf595c5ea4f
+  bob:
+    - version: 4.3.0-0~tepache1
+      published: 2026-11-13T15:47:39Z
+      suites: [trixie, sid, noble, resolute]
+      debs:
+        amd64: d24468d9cb9441fb5aca4882d2860db4b921742f3a1dbfc768bd9d1a853fab85
+        arm64: 32ee660b7043ee108281c2d79b7b8d3be3982cc32c91196ab614f8155f5b2e18
+  buf:
+    - version: 1.75.0-0~tepache1
+      published: 2026-11-13T15:47:39Z
+      suites: [bookworm, trixie, sid, noble, resolute]
+      debs:
+        amd64: 36b4efbf819760c06ccfac1674455618e22f1b7b2bbeb4613233a12503f271ee
+        arm64: 9b14d29bd3ebb80d95ab4d953f24564ae2f753e4d629818c0cab4bc89cda6135
+  fnm:
+    - version: 1.39.0-0~tepache1
+      published: 2026-11-13T15:47:39Z
+      suites: [bookworm, trixie, sid, noble, resolute]
+      debs:
+        amd64: 7c7ff9f643fa51b18331d27dcd95288053ff080b1ac08b65f8b026d8f81284f4
+        arm64: ad5a7b738e8c5f71a2a13b6fc2761fcca3c22ebf4bc42d6a4060a87fd63510b8
 retired: []
