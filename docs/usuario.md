@@ -35,7 +35,7 @@ Elige el valor de `<suite>` según tu distribución. Escríbelo tal cual: en Deb
 Copia el bloque, cambia `<suite>` por el valor de la tabla y ejecútalo:
 
 ```sh debfactory:add
-sudo apt-get install -y curl ca-certificates
+sudo apt-get update && sudo apt-get install -y curl ca-certificates
 sudo curl -fsSLo /etc/apt/keyrings/debfactory.gpg https://apt.opentepache.org/debfactory.gpg
 sudo tee /etc/apt/sources.list.d/debfactory.sources >/dev/null <<'EOF'
 Types: deb
