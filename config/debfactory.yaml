@@ -34,9 +34,9 @@ elf_dependencies:          # NEEDED -> paquete; {glibc} se reemplaza por la GLIB
   ld-linux-x86-64.so.2:  "libc6 (>= {glibc})"   # el cargador, si un binario lo declara en NEEDED
   ld-linux-aarch64.so.1: "libc6 (>= {glibc})"   # (bob arm64 lo hace)
 
-community_repos:           # constitución V; comprobación manual en la fase 1
-  - name: griffo
-    url: https://debian.griffo.io
+community_repos:           # constitución V (1.7.0): solo bloquean si sirven gratis, sin registro y al día
+  - name: griffo-free      # espejo gratuito; deb.griffo.io exige suscripción desde 2026-10-01 y no cuenta
+    url: https://deb-free.griffo.io
 
 completions_image: "debian:trixie"
 
