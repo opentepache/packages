@@ -70,7 +70,8 @@ repo:                      # publicación (specs/002-signed-apt-repo/contracts/c
     mutable: "public, max-age=60"                      # InRelease, Release*, Packages*, keyring
 
 ci:                        # pipeline (specs/003-ci-pipeline/contracts/config.md)
-  repository: "opentepache/debfactory"           # owner/nombre en GitHub; se rellena al crear el repositorio (T020)
+  repository: "opentepache/packages"           # owner/nombre en GitHub
+  tool_repository: "opentepache/debfactory"     # solo para el enlace de diferencias (004 D6)
   destination: r2          # destino de repo.destinations que publica el pipeline
   state_branch: debfactory/state
   state_pr_max_age: 7d     # FR-007c
@@ -78,11 +79,6 @@ ci:                        # pipeline (specs/003-ci-pipeline/contracts/config.md
   labels:
     ci: debfactory-pr
     pub: debfactory-main
-  code_paths:              # un cambio en alguno reconstruye y compara todo (FR-010)
-    - cmd/
-    - internal/
+  code_paths:              # un cambio en alguno reconstruye y compara todo (FR-010; 004 D6)
     - config/
-    - schema/
-    - ci/
-    - go.mod
-    - go.sum
+    - debfactory.version
