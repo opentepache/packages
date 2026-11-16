@@ -1,0 +1,37 @@
+# Check de los pull requests (specs/003-ci-pipeline, contracts/workflows.md).
+# Corre en el runner no confiable (dfci): sin secretos, sin <data>, sin red
+# local. Nunca firma, publica ni escribe en el repositorio (FR-009, FR-017).
+# Los PR de forks esperan la aprobación del mantenedor en cada push (FR-013).
+name: pr
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'specs/**'
+      - '**.md'
+      - 'repo/state.yaml'
+      - 'repo/audit.jsonl'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: [self-hosted, debfactory-pr]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: compilar debfactory
+        run: go build -o bin/debfactory ./cmd/debfactory
+      - name: debfactory ci pr
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: bin/debfactory ci pr --base "origin/${BASE_REF}"

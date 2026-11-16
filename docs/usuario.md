@@ -77,6 +77,10 @@ sudo apt-get update
 sudo apt-get upgrade -y
 ```
 
+Los índices del repositorio caducan a los 30 días de firmarse y se vuelven a firmar cada
+semana. Si `apt-get update` dice que el `Release` de `apt.opentepache.org` *is expired*, el
+repositorio no se ha refirmado a tiempo: no instales nada de él y avisa abriendo un issue.
+
 ## Volver a una versión anterior
 
 El repositorio conserva las últimas 3 versiones de cada paquete. Para ver cuáles hay y volver a

@@ -1,0 +1,80 @@
+# Ejecución de main, ejecuciones manuales y refirmado (specs/003-ci-pipeline,
+# contracts/workflows.md). Solo corre en el runner confiable (dfpub), cuyo hook
+# rechaza cualquier otro workflow, rama o evento (research D3). Renombrar este
+# archivo exige actualizar trusted-gate.sh y la imagen del runner.
+#
+# El refirmado semanal lo lanza debfactory-refresh.timer desde la PC con
+# workflow_dispatch (action=refresh); no hay on: schedule porque GitHub lo
+# desactiva tras 60 días sin actividad.
+name: main
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - 'specs/**'
+      - '**.md'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Acción
+        type: choice
+        options: [rebuild, retire, refresh, restore-state-pr]
+        required: true
+      package:
+        description: Paquete (rebuild, retire)
+        type: string
+        required: false
+      version:
+        description: Versión Debian completa, p. ej. 1.39.0-0~tepache1 (rebuild, retire)
+        type: string
+        required: false
+      reason:
+        description: Motivo (retire)
+        type: string
+        required: false
+      last:
+        description: Confirmar el retiro de la única versión publicada
+        type: boolean
+        default: false
+
+permissions:
+  contents: write        # solo la rama de estado; el ruleset de main lo impide allí
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+  queue: max             # hasta 100 en cola, sin cancelar ninguna (FR-018)
+
+jobs:
+  run:
+    runs-on: [self-hosted, debfactory-main]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: compilar debfactory
+        run: go build -o bin/debfactory ./cmd/debfactory
+      - name: debfactory ci
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          INPUT_ACTION: ${{ inputs.action }}
+          INPUT_PACKAGE: ${{ inputs.package }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_REASON: ${{ inputs.reason }}
+          INPUT_LAST: ${{ inputs.last }}
+        # Los inputs solo pasan por env: nunca se interpolan en el script.
+        run: bin/debfactory ci main
+      - name: notificar un fallo sin informe
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          bin/debfactory ci notify --package pipeline --version -
+          --stage-file "$RUNNER_TEMP/debfactory-stage"
+          --reason "la ejecución terminó antes de su informe"

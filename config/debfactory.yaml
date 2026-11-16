@@ -50,6 +50,9 @@ repo:                      # publicación (specs/002-signed-apt-repo/contracts/c
     masters: [72671CD221684BF7FDCDFB3965B278975D4FE04B]            # fingerprints (40 hex) de las llaves maestras publicadas en el keyring
     subkey: 84983CE038A7C73647AF0C9A15DDD1383F3A75D5             # fingerprint de la subllave que firma
     warn_days: 60          # FR-023
+  validity:                # specs/003-ci-pipeline/contracts/config.md; sustituye a FR-004a de 002
+    days: 30               # Valid-Until = fecha de firma + days
+    warn_days: 7           # repo verify avisa y ci abre un issue "expiry" por debajo de esto
   destinations:
     local:
       remote: /var/tmp/debfactory-repo   # directorio que sirve `just serve`
@@ -65,3 +68,21 @@ repo:                      # publicación (specs/002-signed-apt-repo/contracts/c
   cache_control:
     immutable: "public, max-age=31536000, immutable"   # pool/ y by-hash/
     mutable: "public, max-age=60"                      # InRelease, Release*, Packages*, keyring
+
+ci:                        # pipeline (specs/003-ci-pipeline/contracts/config.md)
+  repository: "opentepache/debfactory"           # owner/nombre en GitHub; se rellena al crear el repositorio (T020)
+  destination: r2          # destino de repo.destinations que publica el pipeline
+  state_branch: debfactory/state
+  state_pr_max_age: 7d     # FR-007c
+  failure_label: pipeline-failure
+  labels:
+    ci: debfactory-pr
+    pub: debfactory-main
+  code_paths:              # un cambio en alguno reconstruye y compara todo (FR-010)
+    - cmd/
+    - internal/
+    - config/
+    - schema/
+    - ci/
+    - go.mod
+    - go.sum
