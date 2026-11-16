@@ -1,4 +1,5 @@
 # Ejecución de main, ejecuciones manuales y refirmado (specs/003-ci-pipeline,
+# `debfactory` es el lanzador de la imagen: specs/004-split-repos, herramienta.md;
 # contracts/workflows.md). Solo corre en el runner confiable (dfpub), cuyo hook
 # rechaza cualquier otro workflow, rama o evento (research D3). Renombrar este
 # archivo exige actualizar trusted-gate.sh y la imagen del runner.
@@ -13,7 +14,6 @@ on:
     branches: [main]
     paths-ignore:
       - 'docs/**'
-      - 'specs/**'
       - '**.md'
   workflow_dispatch:
     inputs:
@@ -58,8 +58,6 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: compilar debfactory
-        run: go build -o bin/debfactory ./cmd/debfactory
       - name: debfactory ci
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -69,12 +67,12 @@ jobs:
           INPUT_REASON: ${{ inputs.reason }}
           INPUT_LAST: ${{ inputs.last }}
         # Los inputs solo pasan por env: nunca se interpolan en el script.
-        run: bin/debfactory ci main
+        run: debfactory ci main
       - name: notificar un fallo sin informe
         if: failure()
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: >-
-          bin/debfactory ci notify --package pipeline --version -
+          debfactory ci notify --package pipeline --version -
           --stage-file "$RUNNER_TEMP/debfactory-stage"
           --reason "la ejecución terminó antes de su informe"
