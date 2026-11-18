@@ -1,0 +1,32 @@
+schema: 1
+name: k9s
+version: 0.51.0
+revision: 1
+level: 1
+summary: terminal UI to manage Kubernetes clusters
+description: |
+  K9s is a terminal user interface to navigate, observe and manage the
+  resources of Kubernetes clusters. Single static binary written in Go.
+homepage: https://k9scli.io
+upstream: derailed/k9s
+license:
+  spdx: Apache-2.0
+  file: {archive: LICENSE}
+value: Not in Debian or Ubuntu; author has no APT repository (only a loose .deb per release); not in griffo.
+arch_map: {amd64: amd64, arm64: arm64}
+artifact:
+  url: https://github.com/derailed/k9s/releases/download/{{tag}}/k9s_Linux_{{arch}}.tar.gz
+  format: tar.gz
+checksums:
+  url: https://github.com/derailed/k9s/releases/download/{{tag}}/checksums.sha256
+  format: sha256sum
+install:
+  - {src: k9s, dst: /usr/bin/}
+completions:
+  bash: {generate: k9s completion bash}
+  zsh: {generate: k9s completion zsh}
+  fish: {generate: k9s completion fish}
+test:
+  command: k9s version --short
+lintian_overrides:
+  - {tag: statically-linked-binary, reason: Upstream Go binaries are static by design; level 1 repackaging cannot relink them.}
