@@ -43,6 +43,7 @@ permissions:
   contents: write        # solo la rama de estado; el ruleset de main lo impide allí
   pull-requests: write
   issues: write
+  statuses: write        # verify sobre la punta de la rama de estado (ruleset de main)
 
 concurrency:
   group: publish
