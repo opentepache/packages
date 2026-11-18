@@ -6,13 +6,11 @@
 # Los PR de forks esperan la aprobación del mantenedor en cada push (FR-013).
 name: pr
 
+# Sin paths-ignore: el ruleset de main exige el check verify y un workflow que
+# no corre lo deja pendiente para siempre. `ci pr` decide en segundos que un
+# cambio de solo documentación no construye nada (FR-011).
 on:
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - 'repo/state.yaml'
-      - 'repo/audit.jsonl'
 
 permissions:
   contents: read
@@ -30,7 +28,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      # La base es el commit fijo del evento, no origin/main: si main avanza
+      # antes de que corra el check, el diff saldría vacío y pasaría sin probar.
       - name: debfactory ci pr
         env:
-          BASE_REF: ${{ github.base_ref }}
-        run: debfactory ci pr --base "origin/${BASE_REF}"
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: debfactory ci pr --base "$BASE_SHA"
