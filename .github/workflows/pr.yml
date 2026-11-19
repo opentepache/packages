@@ -6,11 +6,17 @@
 # Los PR de forks esperan la aprobación del mantenedor en cada push (FR-013).
 name: pr
 
-# Sin paths-ignore: el ruleset de main exige el check verify y un workflow que
-# no corre lo deja pendiente para siempre. `ci pr` decide en segundos que un
-# cambio de solo documentación no construye nada (FR-011).
+# El ruleset de main exige el check verify y un workflow que no corre lo deja
+# pendiente para siempre, así que solo se ignora el estado del repositorio: el
+# PR de estado solo cambia esos dos archivos y su verify lo publica la
+# ejecución de main que lo abre; un PR humano que solo toque el estado se queda
+# sin verify y no se puede integrar. Los cambios de documentación sí corren:
+# `ci pr` decide en segundos que no construye nada (FR-011).
 on:
   pull_request:
+    paths-ignore:
+      - 'repo/state.yaml'
+      - 'repo/audit.jsonl'
 
 permissions:
   contents: read
