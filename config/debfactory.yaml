@@ -83,3 +83,9 @@ ci:                        # pipeline (specs/003-ci-pipeline/contracts/config.md
   code_paths:              # un cambio en alguno reconstruye y compara todo (FR-010; 004 D6)
     - config/
     - debfactory.version
+
+watch:                     # detector de versiones (specs/005-upstream-release-watch, data-model.md §2)
+  interval: 24h            # entre ciclos completos; mínimo 1h (el timer dispara cada hora)
+  cooldown: 48h            # espera desde la publicación upstream; global (FR-004a)
+  rate_reserve: 500        # peticiones a la API que cada ciclo deja sin usar (FR-021)
+  branch_prefix: debfactory/update/   # una rama por paquete: debfactory/update/<pkg>
