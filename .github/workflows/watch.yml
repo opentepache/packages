@@ -1,0 +1,64 @@
+# Detector de versiones upstream (specs/005-upstream-release-watch en
+# opentepache/debfactory, contracts/workflows.md). Revisa los releases de cada
+# paquete y propone las versiones estables nuevas como PR. Lo dispara cada hora
+# debfactory-watch.timer desde la PC; el ciclo completo solo corre cuando vence
+# watch.interval (config/debfactory.yaml). A mano: Actions → watch → Run workflow.
+#
+# Corre en el runner no confiable (dfci): sin <data> ni la llave de firma
+# (FR-012). Es el único workflow con secretos: la llave de la GitHub App, en el
+# environment watch, limitado a main. Los PR que abre la App disparan pr.yml
+# (verify) sin aprobación y su merge dispara main.yml (research D1).
+name: watch
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Solo este paquete (vacío = todos)
+        type: string
+        required: false
+      force:
+        description: Ignorar watch.interval (nunca la espera de 48 h)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write            # notificaciones del detector (etapas watch-*)
+
+concurrency:
+  group: watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: [self-hosted, debfactory-pr]
+    environment: watch
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.DEBFACTORY_APP_CLIENT_ID }}
+          private-key: ${{ secrets.DEBFACTORY_APP_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/debfactory-watch
+          key: watch-${{ github.run_id }}
+          restore-keys: watch-
+      - name: debfactory ci watch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DEBFACTORY_APP_TOKEN: ${{ steps.app.outputs.token }}
+          DEBFACTORY_APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          INPUT_PACKAGE: ${{ inputs.package }}
+          INPUT_FORCE: ${{ inputs.force }}
+        # Las entradas solo pasan por env: nunca se interpolan en el script.
+        run: debfactory ci watch
