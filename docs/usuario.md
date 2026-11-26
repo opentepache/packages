@@ -4,6 +4,10 @@ debfactory publica versiones recientes de herramientas de desarrollo que no est�
 Debian ni en Ubuntu, empaquetadas como `.deb` firmados para amd64 y arm64. Cada paquete pasó
 lintian y una prueba de instalación real en cada distribución antes de publicarse.
 
+La referencia pública, en inglés y en español, es la portada del repositorio:
+<https://apt.opentepache.org/>, con el comando para agregarlo (detecta tu versión) y una página
+por paquete. Esta guía documenta los mismos pasos.
+
 | Paquete | Qué es | No disponible en |
 |---|---|---|
 | `fnm` | gestor de versiones de Node.js | — |
