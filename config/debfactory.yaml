@@ -89,3 +89,7 @@ watch:                     # detector de versiones (specs/005-upstream-release-w
   cooldown: 48h            # espera desde la publicación upstream; global (FR-004a)
   rate_reserve: 500        # peticiones a la API que cada ciclo deja sin usar (FR-021)
   branch_prefix: debfactory/update/   # una rama por paquete: debfactory/update/<pkg>
+
+site:                      # sitio web del repositorio (specs/006-repo-website, contracts/config.md)
+  enabled: true            # genera y sube el sitio al final de cada main, retire y refresh
+  name: OpenTepache        # nombre que muestra el sitio
