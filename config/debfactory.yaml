@@ -4,12 +4,13 @@ maintainer: Juan Pavon <pavon.gnu@gmail.com>
 
 arches: [amd64, arm64]
 
-suites:            # orden = orden del informe
-  bookworm: {image: "debian:bookworm", level2_suffix: deb12}
-  trixie:   {image: "debian:trixie",   level2_suffix: deb13}
-  sid:      {image: "debian:sid",      level2_suffix: debsid}
-  noble:    {image: "ubuntu:noble",    level2_suffix: u2404}
-  resolute: {image: "ubuntu:resolute", level2_suffix: u2604}
+suites:            # orden = orden del informe y del sitio (debfactory specs/007-configurable-suites, data-model §1)
+  bookworm: {image: "debian:bookworm", level2_suffix: deb12,  distro: debian, label: "Debian 12",           version: "12"}
+  trixie:   {image: "debian:trixie",   level2_suffix: deb13,  distro: debian, label: "Debian 13",           version: "13"}
+  forky:    {image: "debian:forky",    level2_suffix: deb14,  distro: debian, label: "Debian 14 (testing)", version: "14"}
+  sid:      {image: "debian:sid",      level2_suffix: debsid, distro: debian, label: "Debian sid",          version: "sid", catchall: true}
+  noble:    {image: "ubuntu:noble",    level2_suffix: u2404,  distro: ubuntu, label: "Ubuntu 24.04",        version: "24.04"}
+  resolute: {image: "ubuntu:resolute", level2_suffix: u2604,  distro: ubuntu, label: "Ubuntu 26.04",        version: "26.04"}
 
 lintian:
   image: "debian:trixie"

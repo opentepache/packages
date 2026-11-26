@@ -23,13 +23,14 @@ Fingerprint: 7267 1CD2 2168 4BF7 FDCD  FB39 65B2 7897 5D4F E04B
 
 ## Suites
 
-Elige el valor de `<suite>` según tu distribución. Escríbelo tal cual: en Debian sid,
-`/etc/os-release` dice `forky`, pero la suite es `sid`.
+Elige el valor de `<suite>` según tu distribución. En Debian sid, `/etc/os-release` declara el
+codename de testing (`forky`): puedes usar `forky` (los paquetes son los mismos) o `sid`.
 
 | Distribución | `<suite>` |
 |---|---|
 | Debian 12 | `bookworm` |
 | Debian 13 | `trixie` |
+| Debian 14 (testing) | `forky` |
 | Debian sid (inestable) | `sid` |
 | Ubuntu 24.04 LTS | `noble` |
 | Ubuntu 26.04 LTS | `resolute` |
