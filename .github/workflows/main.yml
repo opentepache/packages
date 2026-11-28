@@ -1,12 +1,14 @@
-# Ejecución de main, ejecuciones manuales y refirmado (specs/003-ci-pipeline,
-# `debfactory` es el lanzador de la imagen: specs/004-split-repos, herramienta.md;
-# contracts/workflows.md). Solo corre en el runner confiable (dfpub), cuyo hook
-# rechaza cualquier otro workflow, rama o evento (research D3). Renombrar este
-# archivo exige actualizar trusted-gate.sh y la imagen del runner.
+# Plantilla del workflow de main de `packages` (specs/009, contracts/pipeline.md).
+# La copia el mantenedor a packages/.github/workflows/main.yml (T034).
 #
-# El refirmado semanal lo lanza debfactory-refresh.timer desde la PC con
-# workflow_dispatch (action=refresh); no hay on: schedule porque GitHub lo
-# desactiva tras 60 días sin actividad.
+# GitHub compila y prueba en runners estándar gratuitos, sin secretos ni
+# escritura del repositorio: solo id-token y attestations para atestar cada
+# artefacto. La PC (runner debfactory-main) descarga los artefactos y los
+# acepta con `debfactory ci main --artifacts` (atestaciones, doble compilación
+# idéntica, reconstrucción del nivel 1, lintian, prueba de humo amd64); solo la
+# PC firma, publica y sincroniza (constitución IX). Las ejecuciones manuales
+# (rebuild, retire, refresh, restore-state-pr) corren enteras en la PC.
+# `ci-lint` (internal/ci/workflowlint.go) revisa esta plantilla.
 name: main
 
 on:
@@ -39,27 +41,248 @@ on:
         type: boolean
         default: false
 
-permissions:
-  contents: write        # solo la rama de estado; el ruleset de main lo impide allí
-  pull-requests: write
-  issues: write
-  statuses: write        # verify sobre la punta de la rama de estado (ruleset de main)
-
-concurrency:
-  group: publish
-  cancel-in-progress: false
-  queue: max             # hasta 100 en cola, sin cancelar ninguna (FR-018)
+permissions: {}
 
 jobs:
-  run:
+  plan:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      packages: ${{ steps.matrix.outputs.packages }}
+      l1_build: ${{ steps.matrix.outputs.l1_build }}
+      l2_source: ${{ steps.matrix.outputs.l2_source }}
+      l2_build: ${{ steps.matrix.outputs.l2_build }}
+      test: ${{ steps.matrix.outputs.test }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - &tool-checkout
+        name: herramienta (debfactory.version)
+        run: echo "TOOL_SHA=$(cat debfactory.version)" >> "$GITHUB_ENV"
+      - &tool-source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: opentepache/debfactory
+          ref: ${{ env.TOOL_SHA }}
+          path: .tool
+          persist-credentials: false
+      - &tool-go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: 1.26.4
+          cache: false
+      - &tool-build
+        name: compilar debfactory
+        run: |
+          test "$(git -C .tool rev-parse HEAD)" = "$TOOL_SHA"
+          go build -C .tool -trimpath -ldflags "-X debfactory/internal/version.Commit=$TOOL_SHA" \
+            -o "$RUNNER_TEMP/bin/debfactory" ./cmd/debfactory
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - id: matrix
+        run: debfactory ci matrix --mode main >> "$GITHUB_OUTPUT"
+
+  l1-build:
+    needs: plan
+    if: needs.plan.outputs.l1_build != '[]'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.l1_build) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - *tool-checkout
+      - *tool-source
+      - *tool-go
+      - *tool-build
+      - name: build
+        env:
+          PKG: ${{ matrix.package }}
+          ARCH: ${{ matrix.arch }}
+        run: debfactory build "$PKG" --arch "$ARCH" --out "out/l1-$PKG-$ARCH"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: out/**/*
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: l1-${{ matrix.package }}-${{ matrix.arch }}
+          path: out/l1-${{ matrix.package }}-${{ matrix.arch }}
+          retention-days: 1
+          if-no-files-found: error
+
+  l2-source:
+    needs: plan
+    if: needs.plan.outputs.l2_source != '[]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.l2_source) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - *tool-checkout
+      - *tool-source
+      - *tool-go
+      - *tool-build
+      - name: level2 source
+        env:
+          PKG: ${{ matrix.package }}
+        run: debfactory level2 source "$PKG" --out "out/source-$PKG"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: out/**/*
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-${{ matrix.package }}
+          path: out/source-${{ matrix.package }}
+          retention-days: 1
+          if-no-files-found: error
+
+  l2-build:
+    needs: [plan, l2-source]
+    if: needs.plan.outputs.l2_build != '[]'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.l2_build) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - *tool-checkout
+      - *tool-source
+      - *tool-go
+      - *tool-build
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: source-${{ matrix.package }}
+          path: src
+      - name: level2 build
+        env:
+          PKG: ${{ matrix.package }}
+          SUITE: ${{ matrix.suite }}
+          ARCH: ${{ matrix.arch }}
+          VARIANT: ${{ matrix.variant }}
+        run: >-
+          debfactory level2 build "$PKG" --suite "$SUITE" --arch "$ARCH" --variant "$VARIANT"
+          --source "src/$SUITE" --out "out/build-$PKG-$SUITE-$ARCH-$VARIANT" --disk
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: out/**/*
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: build-${{ matrix.package }}-${{ matrix.suite }}-${{ matrix.arch }}-${{ matrix.variant }}
+          path: out/build-${{ matrix.package }}-${{ matrix.suite }}-${{ matrix.arch }}-${{ matrix.variant }}
+          retention-days: 1
+          if-no-files-found: error
+
+  test:
+    needs: [plan, l1-build, l2-build]
+    if: ${{ !cancelled() && !failure() && needs.plan.outputs.test != '[]' }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.test) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - *tool-checkout
+      - *tool-source
+      - *tool-go
+      - *tool-build
+      # El .deb a probar: el de nivel 1 de la arquitectura o la variante 0 de
+      # la suite y arquitectura (accept comprueba que las dos son iguales).
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: l1-${{ matrix.package }}-${{ matrix.arch }}
+          path: in
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: build-${{ matrix.package }}-${{ matrix.suite }}-${{ matrix.arch }}-0
+          path: in
+      - name: test
+        env:
+          PKG: ${{ matrix.package }}
+          SUITE: ${{ matrix.suite }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -- in/*/*.deb
+          test "$#" -eq 1
+          debfactory test "$PKG" --suite "$SUITE" --arch "$ARCH" --deb "$1" --out "out/test-$PKG-$SUITE-$ARCH"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: out/**/*
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-${{ matrix.package }}-${{ matrix.suite }}-${{ matrix.arch }}
+          path: out/test-${{ matrix.package }}-${{ matrix.suite }}-${{ matrix.arch }}
+          retention-days: 1
+          if-no-files-found: error
+
+  # Único job en runner propio: acepta, firma y publica (o ejecuta la acción
+  # manual). Solo corre en la PC, cuyo hook rechaza otros workflows o ramas.
+  publish:
+    needs: [plan, l1-build, l2-source, l2-build, test]
+    if: ${{ !cancelled() }}
     runs-on: [self-hosted, debfactory-main]
     timeout-minutes: 120
+    permissions:
+      contents: write        # solo la rama de estado; el ruleset de main lo impide allí
+      pull-requests: write
+      issues: write
+      statuses: write
+    concurrency:
+      group: publish
+      cancel-in-progress: false
+      queue: max
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0
-      - name: debfactory ci
+      - if: github.event_name == 'push'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: ${{ runner.temp }}/artifacts
+      - name: debfactory ci main (acepta los artefactos)
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: debfactory ci main --artifacts "$RUNNER_TEMP/artifacts"
+      - name: debfactory ci (acción manual)
+        if: github.event_name == 'workflow_dispatch'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           INPUT_ACTION: ${{ inputs.action }}
